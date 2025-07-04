@@ -7,16 +7,6 @@ Ce projet automatise le déploiement complet de WordPress avec Apache, PHP et Ma
 ## 🧱 Arborescence du projet
 
 ```bash
-.
-├── Install_wordpress.sh                  # Script initial de référence (non utilisé dans Ansible)
-├── Makefile                              # Cibles Make pour build / clean / deploy
-├── README.md                             # Ce fichier de documentation
-├── docker-compose.yml                    # Définition des conteneurs Ubuntu et Rocky
-├── inventory.yml                         # Fichier d'inventaire Ansible
-├── logs
-│   └── deploy.log                        # Log détaillé du déploiement
-├── roles
-│   └── wordpress_install                 # Rôle Ansible principal
 │       ├── defaults
 │       │   └── main.yml                  # Valeurs par défaut (ex: ports, users)
 │       ├── handlers
@@ -33,63 +23,57 @@ Ce projet automatise le déploiement complet de WordPress avec Apache, PHP et Ma
 │       │   └── wp-config.php.j2          # Fichier de config WordPress
 │       └── vars
 │           └── main.yml                  # Variables sensibles ou de surcharges
-└── site.yml                              # Playbook principal
 ```
 
 ## ⚙️ Fonctionnement global
 
-Ce projet repose sur trois composants principaux :
+Ce role fait la chose suivante:
 
-1. **Docker Compose** : Crée deux conteneurs distincts (Ubuntu et Rocky) accessibles via les ports 2222 (Ubuntu) et 2223 (Rocky) pour SSH, et 8080/8081 pour Apache.
-2. **Makefile** : Facilite les commandes usuelles : démarrage, nettoyage, déploiement.
-3. **Ansible** : Configure automatiquement Apache, MariaDB et WordPress dans chaque conteneur.
-
-## 🔐 Sécurité de la connexion SSH
-
-Une paire de clés SSH est générée automatiquement. La clé publique est injectée dans chaque conteneur, dans le répertoire `/home/ansible/.ssh/authorized_keys`. Cela permet à Ansible de s’y connecter sans mot de passe.
+3. **Ansible** : Configure automatiquement Apache, MariaDB et WordPress pour un environnement ubuntu et Rocky.
 
 ## 🚀 Étapes d'utilisation
 
-### 1. Lancer les conteneurs et injecter les clés SSH
+### 1. Prérequis
 
-```bash
-make
+Avoir le requirements.yml suivant :
+
+```yaml
+roles:
+  - name: akhalildjo.wordpress_install
 ```
 
-Cette commande :
-
-* Lance les conteneurs avec Docker Compose
-* Génère une paire de clés SSH si elle n’existe pas
-* Injecte la clé publique dans les conteneurs Ubuntu et Rocky
-
-### 2. Vérifier la connectivité Ansible
+Executer la commande suivante pour installer les dépendances :
 
 ```bash
-ansible -i inventory.yml all -m ping
+ansible-galaxy install -r requirements.yml
 ```
 
-Les deux hôtes doivent répondre avec `pong`.
+> Exemple de playbook : 
+```yaml
+- name: Déploiement WordPress conteneurisé
+  hosts: wordpress
+  become: true
+  roles:
+    - role: akhalildjo.wordpress_install
+```
 
-### 3. Déployer WordPress
+### 2. Déploiement
+
+Lancer la commande suivante pour déployer les conteneurs :
 
 ```bash
-make deploy
+ansible-playbook -i inventory.yml site_galaxy_role.yml -vv
 ```
 
-Le playbook `site.yml` est exécuté. Les logs détaillés sont sauvegardés dans :
 
-```bash
-logs/deploy.log
-```
-
-### 4. Vérifier l’installation
+### 2. Vérifier l’installation
 
 * Ouvrir [http://localhost:8080](http://localhost:8080) pour Ubuntu
 * Ouvrir [http://localhost:8081](http://localhost:8081) pour Rocky
 
-Vous devriez voir l’assistant de configuration WordPress (choix de langue).
+Vous devriez voir l’assistant de configuration WordPress (choix de langue). pour Ubuntu et Rocky
 
-Si la page par défaut d’Apache s’affiche encore, relancez `make deploy` pour appliquer les bonnes permissions et la suppression des fichiers par défaut.
+Si les pages ne s'affichent pas, mercie de passer par le repo de développement suivant : https://github.com/akhalildjo/ansible-wp-ak_djoghlal/tree/main et de suivre la documentation.
 
 ## 🧩 Variables personnalisables
 
@@ -142,29 +126,8 @@ Installe les paquets nécessaires pour chaque distribution. Les modules conditio
 
 Déclenche le redémarrage du service Apache si un fichier de configuration est modifié (template ou copy).
 
-## 🧹 Nettoyage complet
-
-```bash
-make clean
-```
-
-Cela :
-
-* Supprime les conteneurs
-* Efface la paire de clés SSH
-* Supprime les fichiers de log
-
-## ✅ Tests attendus après déploiement
-
-* Connexion SSH fonctionnelle avec Ansible
-* `ansible all -m ping` renvoie `pong`
-* Accès à [http://localhost:8080](http://localhost:8080) et [http://localhost:8081](http://localhost:8081)
-* Affichage de l’interface d’installation WordPress (choix de langue)
-
 ## 👨‍🎓 Auteur
 
 **Ahmed-Khalil DJOGHLAL** — Évaluation DevOps : Déploiement automatisé d'applications Web avec Ansible et Docker.
 
 ---
-
-🧠 *Ce projet est un exemple complet d'infrastructure as code (IaC), prêt à être déployé sur tout environnement supportant Docker et Ansible.*
